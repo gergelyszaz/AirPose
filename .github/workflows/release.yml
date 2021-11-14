@@ -18,12 +18,8 @@ jobs:
     - uses: BSFishy/pip-action@v1
       with:
         requirements: application/requirements.txt
-    - name: Build exe
-      run: |
-        pyinstaller application/main.spec --windowed --onefile
-    - uses: edgarrc/action-7z@v1
-      with:
-        args: 7z a -t7z -mx=9 AirPose.7z ./dist/
+    - run: pyinstaller application/main.spec --windowed --onefile
+    - run: 7z a -t7z -mx=9 AirPose.7z ./dist/
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
