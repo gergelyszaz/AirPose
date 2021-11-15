@@ -18,7 +18,7 @@ jobs:
     - uses: BSFishy/pip-action@v1
       with:
         requirements: application/requirements.txt
-    - run: pyinstaller application/main.spec --windowed --onefile
+    - run: pyinstaller application/main.spec --onefile --win-private-assemblies
     - run: 7z a -t7z -mx=9 AirPose.7z ./dist/
     - name: Create Release
       id: create_release
@@ -39,4 +39,9 @@ jobs:
         upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
         asset_path: ./AirPose.7z
         asset_name: AirPose-${{ github.ref }}.7z
-        asset_content_type: application/octet-stream
+        asset_content_type: application/zip
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v2.2.4
+      with:
+        path: ./dist/*
+        retention-days: 30
