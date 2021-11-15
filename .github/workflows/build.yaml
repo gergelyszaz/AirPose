@@ -1,0 +1,22 @@
+name: Make a release
+
+on: push
+
+jobs:
+  build-linux:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    - uses: BSFishy/pip-action@v1
+      with:
+        requirements: application/requirements.txt
+    - run: pyinstaller application/main.spec --onefile --win-private-assemblies
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v2.2.4
+      with:
+        path: ./dist/*
+        retention-days: 30
