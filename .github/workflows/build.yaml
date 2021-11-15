@@ -5,16 +5,18 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python
-      uses: actions/setup-python@v2
+    - uses: actions/setup-python@v2
       with:
         python-version: 3.9
     - uses: BSFishy/pip-action@v1
       with:
         requirements: application/requirements.txt
-    - run: pyinstaller application/main.spec
-    - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v2.2.4
+    - run: pyinstaller application/main.spec --no-embed-manifest -D
+    - uses: actions/upload-artifact@v2.2.4
       with:
-        path: ./dist/*
+        path: ./dist/
+        retention-days: 7
+    - uses: actions/upload-artifact@v2.2.4
+      with:
+        path: ./build/
         retention-days: 7
