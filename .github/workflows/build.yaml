@@ -11,7 +11,7 @@ jobs:
     - uses: BSFishy/pip-action@v1
       with:
         requirements: application/requirements.txt
-    - run: pyinstaller application/main.spec --no-embed-manifest -D
+    - run: pyinstaller ./application/test.py --no-embed-manifest -D
     - uses: actions/upload-artifact@v2.2.4
       with:
         path: ./dist/
