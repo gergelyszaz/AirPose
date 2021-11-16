@@ -1,25 +1,41 @@
-name: Make a release
+name: release
 
-on:
-  push:
-    # Sequence of patterns matched against refs/tags
-    tags:
-      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+on: push
 
 jobs:
-  build-linux:
+  build:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python
-      uses: actions/setup-python@v2
+    - uses: actions/setup-python@v2
       with:
-        python-version: 3.9
+        python-version: '3.8'
     - uses: BSFishy/pip-action@v1
       with:
         requirements: application/requirements.txt
-    - run: pyinstaller application/main.spec --onefile --win-private-assemblies
-    - run: 7z a -t7z -mx=9 AirPose.7z ./dist/
+    - run: pyinstaller application/main.spec --no-embed-manifest -D
+    - uses: actions/upload-artifact@v2.2.4
+      with:
+        path: ./dist/
+        retention-days: 7
+    - uses: actions/upload-artifact@v2.2.4
+      with:
+        name: manifest
+        path: ./build/main/main.exe.manifest
+        retention-days: 7
+
+
+
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    if: ${{ github.ref_type == 'tag' }}
+    steps:
+    - id: tag
+      uses: dawidd6/action-get-tag@v1
+      with:
+        strip_v: false
+    - uses: actions/download-artifact@v2
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -27,7 +43,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
       with:
         tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
+        release_name: ${{steps.tag.outputs.tag}}
         draft: false
         prerelease: false
     - name: Upload Release Asset
@@ -37,11 +53,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-        asset_path: ./AirPose.7z
-        asset_name: AirPose-${{ github.ref }}.7z
+        asset_path: artifact
+        asset_name: AirPose-${{steps.tag.outputs.tag}}.7z
         asset_content_type: application/zip
-    - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v2.2.4
-      with:
-        path: ./dist/*
-        retention-days: 30
