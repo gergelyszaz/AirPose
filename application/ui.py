@@ -1,14 +1,19 @@
-# tkinter app stuff
 import os
 import sys
 from tkinter import Button, Event, Frame, Label, StringVar, Tk, ttk
 from typing import Callable
+
+import numpy
 from camera import set_selected_camera
+from PIL import Image, ImageTk
 
 from camera import get_cameras
 from pipe import calibrate
 
+video_label_image = numpy.asarray(Image.new('RGB', (100,100), color=(255,1,0)))
+
 def init_tkinter_app() -> Tk:
+    global root
     Logo = resource_path("favicon.ico")
     root = Tk()
     root.title('Airpose')
@@ -30,9 +35,24 @@ def init_calibrate_button(app: Tk, command: Callable):
 
 def init_video_output(app: Tk) -> Label:
     # Create a label for video stream
+    global video_label
     video_label = Label(app)
     video_label.grid(row=1,column=0,columnspan=1)
+    video_label.after(1, update_video_output)
     return video_label
+
+def update_video(image: Image):
+    global video_label_image
+    video_label_image = image
+
+def update_video_output():
+    global video_label_image
+    global video_label
+    img = Image.fromarray(video_label_image)
+    imgtk = ImageTk.PhotoImage(image=img)
+    video_label.imgtk = imgtk
+    video_label.configure(image=imgtk)
+    video_label.after(30, update_video_output)
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """

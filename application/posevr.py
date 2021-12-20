@@ -1,16 +1,13 @@
 # external modules
-from cv2 import VideoCapture, cvtColor, COLOR_RGB2BGR
+from cv2 import cvtColor, COLOR_RGB2BGR
 import time
 import mediapipe as mp
-
 from threading import Thread
-from PIL import ImageTk, Image
+from PIL import Image
 
 from camera import get_camera_image, close_camera, get_camera
-from ui import init_calibrate_button, init_tkinter_app, init_video_output
-from pipe import calibrate, close_pipe, create_pipe, send_data_to_pipe, start_pipe
-
-
+from ui import init_tkinter_app, update_video
+from pipe import close_pipe, create_pipe, send_data_to_pipe, start_pipe
 
 # setup mediapipe
 mp_drawing = mp.solutions.drawing_utils
@@ -26,17 +23,11 @@ MIN_VISIBILITY = 0.7
 prev_time = 0
 prev_landmarks = {}
 
+
 def video_stream_loop():
-    global video_label
-    global root
-    try:    #try is attempt to cleanup app after steamvr disconnects
+    while True:
         process_camera_image()
-  
-        #loops back
-        video_label.after(1, video_stream_loop)
-    except:
-        root.quit()
-        return
+        time.sleep(0.01)
 
 def process_camera_image() -> Image:
     cap = get_camera()
@@ -44,19 +35,10 @@ def process_camera_image() -> Image:
     results = pose.process(image)        
     data = convert_to_pipe_data(results)
     send_data_to_pipe(data)
-    update_video_output(image, results.pose_landmarks)
-
-def update_video_output(image: Image, landmarks):
-    # Draw the pose annotation on the image.
     image.flags.writeable = True
-    mp_drawing.draw_landmarks(image, landmarks, mp_pose.POSE_CONNECTIONS)
+    mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
     image = cvtColor(image, COLOR_RGB2BGR)
-
-    # send image to tkinter app
-    img = Image.fromarray(image)
-    imgtk = ImageTk.PhotoImage(image=img)
-    video_label.imgtk = imgtk
-    video_label.configure(image=imgtk)
+    update_video(image)
 
 def convert_to_pipe_data(results):
     global prev_landmarks
@@ -87,18 +69,20 @@ def convert_to_pipe_data(results):
     return send
 
 if __name__ == '__main__':
-    # starts pipe in seperate thread
     pipe = create_pipe()
-    t1 = Thread(target=start_pipe, args=(pipe,))
-    t1.start()
+    
+    pipe_thread = Thread(target=start_pipe, args=(pipe,))
+    pipe_thread.start()
+
+    camera_thread = Thread(target=video_stream_loop)
+    camera_thread.start()
     
     prev_time = time.time()
 
     root = init_tkinter_app()
-    
-    video_label = init_video_output(root)
-    root.after(0, video_stream_loop)
     root.mainloop()
+
+    quit = True
 
     close_pipe()
     close_camera()
